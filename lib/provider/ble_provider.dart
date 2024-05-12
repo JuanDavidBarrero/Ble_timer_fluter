@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 class BleProvider extends ChangeNotifier {
-  FlutterBluePlus flutterBlue = FlutterBluePlus();  
+  FlutterBluePlus flutterBlue = FlutterBluePlus();
   List<BluetoothDevice> devices = [];
   BluetoothDevice? selectedDevice;
   String response = '';
@@ -45,30 +45,33 @@ class BleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void writeCharacteristic(Guid characteristicId, List<int> data) async {
+  Future<void>  writeCharacteristic(Guid characteristicId, List<int> data) async {
     List<BluetoothService> services = await selectedDevice!.discoverServices();
     for (BluetoothService service in services) {
       for (BluetoothCharacteristic characteristic in service.characteristics) {
         if (characteristic.uuid == characteristicId) {
           await characteristic.write(data);
+          return;
         }
       }
     }
   }
 
-  void readCharacteristic(Guid characteristicId) async {
+  Future<void> readCharacteristic(Guid characteristicId) async {
     List<BluetoothService> services = await selectedDevice!.discoverServices();
     for (BluetoothService service in services) {
       for (BluetoothCharacteristic characteristic in service.characteristics) {
         if (characteristic.uuid == characteristicId) {
           List<int> value = await characteristic.read();
           readResponse = utf8.decode(value);
+          notifyListeners();
+          return; 
         }
       }
     }
   }
 
-  void subscribeToNotifications(Guid characteristicId) async {
+   Future<void> subscribeToNotifications(Guid characteristicId) async {
     List<BluetoothService> services = await selectedDevice!.discoverServices();
     for (BluetoothService service in services) {
       for (BluetoothCharacteristic characteristic in service.characteristics) {
@@ -76,6 +79,8 @@ class BleProvider extends ChangeNotifier {
           await characteristic.setNotifyValue(true);
           subscription = characteristic.onValueReceived.listen((value) {
             response = utf8.decode(value);
+            notifyListeners();
+            return;
           });
         }
       }

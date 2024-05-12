@@ -178,7 +178,7 @@ class _TimePickerState extends State<TimePicker> {
     }
   }
 
-  void onSwitchChanged(bool newValue, int switchIndex) {
+  Future<void> onSwitchChanged(bool newValue, int switchIndex) async {
     final bleprovider = Provider.of<BleProvider>(context, listen: false);
 
     response = "";
@@ -199,14 +199,21 @@ class _TimePickerState extends State<TimePicker> {
 
     data.add(100);
 
-    if (isFeatureEnabled) data.add(2);
-    if (isFeatureEnabled1) data.add(15);
-    if (isFeatureEnabled2) data.add(18);
-
-    bleprovider.writeCharacteristic(uuidWrite, data);
+    if (isFeatureEnabled) {
+      data.add(2);
+      await bleprovider.writeCharacteristic(uuidWrite, data);
+    }
+    if (isFeatureEnabled1) {
+      data.add(15);
+      await bleprovider.writeCharacteristic(uuidWrite, data);
+    }
+    if (isFeatureEnabled2) {
+      data.add(18);
+      await bleprovider.writeCharacteristic(uuidWrite, data);
+    }
 
     if (newValue) {
-      bleprovider.readCharacteristic(uuidWrite);
+      await bleprovider.readCharacteristic(uuidWrite);
       switch (switchIndex) {
         case 0:
           response = bleprovider.readResponse;
@@ -219,11 +226,11 @@ class _TimePickerState extends State<TimePicker> {
         default:
           break;
       }
-    
+      setState(() {});
     }
   }
 
-  void sendata() {
+  Future<void> sendata() async {
     final bleprovider = Provider.of<BleProvider>(context, listen: false);
 
     if (bleprovider.selectedDevice == null ||
@@ -233,10 +240,13 @@ class _TimePickerState extends State<TimePicker> {
       return;
     }
 
-    if (timeFrom.hour >= timeTo.hour && timeFrom.minute <= timeTo.minute) {
-      datesMatch = true;
+    DateTime now = DateTime.now();
+    TimeOfDay currentTime = TimeOfDay(hour: now.hour, minute: now.minute);
+
+    if (timeFrom.hour < currentTime.hour || (timeFrom.hour == currentTime.hour && timeFrom.minute < currentTime.minute)) {
+       datesMatch = true;
       warningDevice = "";
-      warningText = "The start time cannot be less than the end time";
+      warningText = "The end time cannot be earlier than the current time";
       setState(() {});
       return;
     }
@@ -260,7 +270,9 @@ class _TimePickerState extends State<TimePicker> {
     data.add(timeFrom.hour);
     data.add(timeFrom.minute);
 
-    bleprovider.writeCharacteristic(uuidWrite, data);
+    await bleprovider.writeCharacteristic(uuidWrite, data);
+
+    await Future.delayed(const Duration(milliseconds: 200));
 
     warningDevice = "";
     successmesage = bleprovider.response;

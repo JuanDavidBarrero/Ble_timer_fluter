@@ -107,7 +107,7 @@ class _HomePageState extends State<HomePage> {
         onPressed: () async {
           if (!isConnected) {
             await bleProvider.connectToDevice(myDevice);
-            bleProvider.subscribeToNotifications(uuidWrite);
+            await bleProvider.subscribeToNotifications(uuidWrite);
           } else {
             bleProvider.forgetNotifications();
             await bleProvider.disconnectToDevice(myDevice);
