@@ -195,6 +195,16 @@ class _TimePickerState extends State<TimePicker> {
       return;
     }
 
+    List<int> data = [];
+
+    data.add(100);
+
+    if (isFeatureEnabled) data.add(2);
+    if (isFeatureEnabled1) data.add(15);
+    if (isFeatureEnabled2) data.add(18);
+
+    bleprovider.writeCharacteristic(uuidWrite, data);
+
     if (newValue) {
       bleprovider.readCharacteristic(uuidWrite);
       switch (switchIndex) {
@@ -241,9 +251,9 @@ class _TimePickerState extends State<TimePicker> {
 
     datesMatch = false;
     List<int> data = [];
-    if (isFeatureEnabled) data.add(1);
-    if (isFeatureEnabled1) data.add(2);
-    if (isFeatureEnabled2) data.add(3);
+    if (isFeatureEnabled) data.add(2);
+    if (isFeatureEnabled1) data.add(15);
+    if (isFeatureEnabled2) data.add(18);
 
     data.add(timeTo.hour);
     data.add(timeTo.minute);

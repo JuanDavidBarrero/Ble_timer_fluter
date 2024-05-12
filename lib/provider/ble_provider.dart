@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -5,12 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 class BleProvider extends ChangeNotifier {
-  FlutterBluePlus flutterBlue = FlutterBluePlus();
+  FlutterBluePlus flutterBlue = FlutterBluePlus();  
   List<BluetoothDevice> devices = [];
   BluetoothDevice? selectedDevice;
   String response = '';
   String readResponse = '';
-  var subscription;
+  late StreamSubscription subscription;
 
   BleProvider() {
     startScanning();

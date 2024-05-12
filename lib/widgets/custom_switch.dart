@@ -41,7 +41,7 @@ class _CustomSwitchState extends State<CustomSwitch> {
         ),
         Text(
           widget.bottomText,
-          style: const TextStyle(fontSize: 14),
+          style: const TextStyle(fontSize: 10),
         ),
       ],
     );
