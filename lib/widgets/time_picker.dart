@@ -1,14 +1,15 @@
+import 'package:ble_app_timer/provider/dates_provider.dart';
+import 'package:ble_app_timer/provider/switch_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 
-import 'package:ble_app_timer/widgets/date_piker.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:provider/provider.dart';
 
+import 'package:ble_app_timer/components/row_of_dates.dart';
+import 'package:ble_app_timer/components/row_of_switch.dart';
 import 'package:ble_app_timer/provider/ble_provider.dart';
-
 import 'package:ble_app_timer/widgets/custom_button.dart';
-import 'package:ble_app_timer/widgets/custom_switch.dart';
 
 class TimePicker extends StatefulWidget {
   const TimePicker({super.key});
@@ -19,19 +20,12 @@ class TimePicker extends StatefulWidget {
 }
 
 class _TimePickerState extends State<TimePicker> {
-  DateTime toDate = DateTime.now();
-  DateTime fromDate = DateTime.now().add(const Duration(minutes: 1));
   bool datesMatch = false;
   String warningText = '';
   String warningDevice = '';
   String warningRele = '';
   String successmesage = '';
-  String response = '';
-  String response2 = '';
-  String response3 = '';
-  bool isFeatureEnabled = false;
-  bool isFeatureEnabled1 = false;
-  bool isFeatureEnabled2 = false;
+
   Guid uuidWrite = Guid("d8520577-81ed-478c-a3ad-a810d65c064a");
 
   @override
@@ -49,8 +43,8 @@ class _TimePickerState extends State<TimePicker> {
             fontFamily: 'Roboto', // Example font family
           ),
         ),
-        rowOfSwitch(),
-        rowOfDates(),
+        const RowOfSwitch(),
+        const RowOfDates(),
         datesMatch
             ? Text(
                 warningText,
@@ -86,195 +80,17 @@ class _TimePickerState extends State<TimePicker> {
     );
   }
 
-  Row rowOfSwitch() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CustomSwitch(
-          topText: 'Rele 1',
-          bottomText: isFeatureEnabled ? response : '',
-          value: isFeatureEnabled,
-          onChanged: (newValue) => onSwitchChanged(newValue, 0),
-        ),
-        const SizedBox(width: 30),
-        CustomSwitch(
-          topText: 'Rele 2',
-          bottomText: isFeatureEnabled1 ? response2 : '',
-          value: isFeatureEnabled1,
-          onChanged: (newValue) => onSwitchChanged(newValue, 1),
-        ),
-        const SizedBox(width: 30),
-        CustomSwitch(
-          topText: 'Rele 3',
-          bottomText: isFeatureEnabled2 ? response3 : '',
-          value: isFeatureEnabled2,
-          onChanged: (newValue) => onSwitchChanged(newValue, 2),
-        ),
-      ],
-    );
-  }
-
-  Row rowOfDates() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        DatePicker(
-          selectedTime: fromDate,
-          text: 'from',
-          onPressedDate: () async {
-            final newDate = await _showDatePicker(context, DateTime.now());
-            if (newDate != null) {
-              setState(() {
-                fromDate = DateTime(
-                  newDate.year,
-                  newDate.month,
-                  newDate.day,
-                  fromDate.hour,
-                  fromDate.minute,
-                  fromDate.second,
-                );
-
-                toDate = fromDate.add(const Duration(minutes: 1));
-              });
-            }
-          },
-          onPressed: () async {
-            await _showTimePicker((newTime) {
-              setState(() {
-                fromDate = DateTime(
-                  fromDate.year,
-                  fromDate.month,
-                  fromDate.day,
-                  newTime.hour,
-                  newTime.minute,
-                  fromDate.second,
-                );
-                toDate = fromDate.add(const Duration(minutes: 1));
-              });
-            });
-          },
-        ),
-        const SizedBox(width: 20),
-        DatePicker(
-          selectedTime: toDate,
-          text: 'to',
-          onPressedDate: () async {
-            final newDate = await _showDatePicker(context, DateTime.now());
-            if (newDate != null) {
-              setState(() {
-                toDate = DateTime(
-                  newDate.year,
-                  newDate.month,
-                  newDate.day,
-                  toDate.hour,
-                  toDate.minute,
-                  toDate.second,
-                );
-              });
-            }
-          },
-          onPressed: () async {
-            await _showTimePicker((newTime) {
-              setState(() {
-                toDate = DateTime(
-                  toDate.year,
-                  toDate.month,
-                  toDate.day,
-                  newTime.hour,
-                  newTime.minute,
-                  toDate.second,
-                );
-              });
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  Future<DateTime?> _showDatePicker(
-      BuildContext context, DateTime initialDate) async {
-    return showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(3000),
-    );
-  }
-
-  Future<void> _showTimePicker(void Function(TimeOfDay) onTimePicked) async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      initialEntryMode: TimePickerEntryMode.input,
-      builder: (BuildContext context, Widget? child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!,
-        );
-      },
-    );
-
-    if (pickedTime != null) {
-      onTimePicked(pickedTime);
-    }
-  }
-
-  Future<void> onSwitchChanged(bool newValue, int switchIndex) async {
-    final bleprovider = Provider.of<BleProvider>(context, listen: false);
-
-    response = "";
-    response2 = "";
-    response3 = "";
-
-    setState(() {
-      isFeatureEnabled = switchIndex == 0 && newValue;
-      isFeatureEnabled1 = switchIndex == 1 && newValue;
-      isFeatureEnabled2 = switchIndex == 2 && newValue;
-    });
-
-    if (bleprovider.selectedDevice == null) {
-      return;
-    }
-
-    List<int> data = [];
-
-    data.add(100);
-
-    if (isFeatureEnabled) {
-      data.add(2);
-      await bleprovider.writeCharacteristic(uuidWrite, data);
-    }
-    if (isFeatureEnabled1) {
-      data.add(15);
-      await bleprovider.writeCharacteristic(uuidWrite, data);
-    }
-    if (isFeatureEnabled2) {
-      data.add(18);
-      await bleprovider.writeCharacteristic(uuidWrite, data);
-    }
-
-    if (newValue) {
-      await bleprovider.readCharacteristic(uuidWrite);
-      switch (switchIndex) {
-        case 0:
-          response = bleprovider.readResponse;
-          break;
-        case 1:
-          response2 = bleprovider.readResponse;
-          break;
-        case 2:
-          response3 = bleprovider.readResponse;
-        default:
-          break;
-      }
-      setState(() {});
-    }
-  }
-
   Future<void> sendata() async {
     final bleprovider = Provider.of<BleProvider>(context, listen: false);
+    final dateProvider = Provider.of<DatesProvider>(context, listen: false);
+    final switchProvider = Provider.of<SwitchProvider>(context, listen: false);
+
+    DateTime toDate = dateProvider.toDate;
+    DateTime fromDate = dateProvider.fromDate;
+
+    bool isFeatureEnabled = switchProvider.isFeatureEnabled;
+    bool isFeatureEnabled1 = switchProvider.isFeatureEnabled1;
+    bool isFeatureEnabled2 = switchProvider.isFeatureEnabled2;
 
     if (bleprovider.selectedDevice == null ||
         !bleprovider.selectedDevice!.isConnected) {

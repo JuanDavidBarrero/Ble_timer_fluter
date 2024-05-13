@@ -111,11 +111,10 @@ class _HomePageState extends State<HomePage> {
           } else {
             bleProvider.forgetNotifications();
             await bleProvider.disconnectToDevice(myDevice);
+            bleProvider.startScanning();
             deviceName = "";
           }
           isConnected = myDevice.isConnected;
-
-
           setState(() {});
         },
       ),
