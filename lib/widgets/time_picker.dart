@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ble_app_timer/widgets/date_piker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +9,6 @@ import 'package:ble_app_timer/provider/ble_provider.dart';
 
 import 'package:ble_app_timer/widgets/custom_button.dart';
 import 'package:ble_app_timer/widgets/custom_switch.dart';
-import 'package:ble_app_timer/widgets/date_piker.dart';
 
 class TimePicker extends StatefulWidget {
   const TimePicker({super.key});
@@ -19,8 +19,8 @@ class TimePicker extends StatefulWidget {
 }
 
 class _TimePickerState extends State<TimePicker> {
-  late TimeOfDay timeFrom;
-  late TimeOfDay timeTo;
+  DateTime toDate = DateTime.now();
+  DateTime fromDate = DateTime.now().add(const Duration(minutes: 1));
   bool datesMatch = false;
   String warningText = '';
   String warningDevice = '';
@@ -33,13 +33,6 @@ class _TimePickerState extends State<TimePicker> {
   bool isFeatureEnabled1 = false;
   bool isFeatureEnabled2 = false;
   Guid uuidWrite = Guid("d8520577-81ed-478c-a3ad-a810d65c064a");
-
-  @override
-  void initState() {
-    super.initState();
-    timeFrom = TimeOfDay.now();
-    timeTo = TimeOfDay.now();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,10 +59,11 @@ class _TimePickerState extends State<TimePicker> {
             : const Text(''),
         const SizedBox(height: 20),
         CustomButton(
-            icon: Icons.send,
-            text: 'Send data',
-            width: MediaQuery.of(context).size.width * 0.8,
-            onPressed: sendata),
+          icon: Icons.send,
+          text: 'Send data',
+          width: MediaQuery.of(context).size.width * 0.8,
+          onPressed: sendata,
+        ),
         const SizedBox(height: 10),
         Text(
           warningDevice,
@@ -126,37 +120,86 @@ class _TimePickerState extends State<TimePicker> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         DatePicker(
-          selectedTime: timeTo,
-          text: 'to',
+          selectedTime: fromDate,
+          text: 'from',
+          onPressedDate: () async {
+            final newDate = await _showDatePicker(context, DateTime.now());
+            if (newDate != null) {
+              setState(() {
+                fromDate = DateTime(
+                  newDate.year,
+                  newDate.month,
+                  newDate.day,
+                  fromDate.hour,
+                  fromDate.minute,
+                  fromDate.second,
+                );
+
+                toDate = fromDate.add(const Duration(minutes: 1));
+              });
+            }
+          },
           onPressed: () async {
             await _showTimePicker((newTime) {
               setState(() {
-                timeTo = newTime;
-                if ((timeTo.hour > timeFrom.hour ||
-                    (timeTo.hour == timeFrom.hour &&
-                        timeTo.minute > timeFrom.minute))) {
-                  timeFrom =
-                      TimeOfDay(hour: timeTo.hour, minute: timeTo.minute + 1);
-                }
+                fromDate = DateTime(
+                  fromDate.year,
+                  fromDate.month,
+                  fromDate.day,
+                  newTime.hour,
+                  newTime.minute,
+                  fromDate.second,
+                );
+                toDate = fromDate.add(const Duration(minutes: 1));
               });
             });
           },
         ),
-        const SizedBox(
-          width: 20,
-        ),
+        const SizedBox(width: 20),
         DatePicker(
-          selectedTime: timeFrom,
-          text: 'from',
+          selectedTime: toDate,
+          text: 'to',
+          onPressedDate: () async {
+            final newDate = await _showDatePicker(context, DateTime.now());
+            if (newDate != null) {
+              setState(() {
+                toDate = DateTime(
+                  newDate.year,
+                  newDate.month,
+                  newDate.day,
+                  toDate.hour,
+                  toDate.minute,
+                  toDate.second,
+                );
+              });
+            }
+          },
           onPressed: () async {
             await _showTimePicker((newTime) {
               setState(() {
-                timeFrom = newTime;
+                toDate = DateTime(
+                  toDate.year,
+                  toDate.month,
+                  toDate.day,
+                  newTime.hour,
+                  newTime.minute,
+                  toDate.second,
+                );
               });
             });
           },
         ),
       ],
+    );
+  }
+
+  Future<DateTime?> _showDatePicker(
+      BuildContext context, DateTime initialDate) async {
+    return showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(3000),
     );
   }
 
@@ -241,10 +284,18 @@ class _TimePickerState extends State<TimePicker> {
     }
 
     DateTime now = DateTime.now();
-    TimeOfDay currentTime = TimeOfDay(hour: now.hour, minute: now.minute);
 
-    if (timeFrom.hour < currentTime.hour || (timeFrom.hour == currentTime.hour && timeFrom.minute < currentTime.minute)) {
-       datesMatch = true;
+    if (toDate.year < now.year ||
+        (toDate.year == now.year && toDate.month < now.month) ||
+        (toDate.year == now.year &&
+            toDate.month == now.month &&
+            toDate.day < now.day) ||
+        (toDate.year == now.year &&
+            toDate.month == now.month &&
+            toDate.day == now.day &&
+            (toDate.hour < now.hour ||
+                (toDate.hour == now.hour && toDate.minute < now.minute)))) {
+      datesMatch = true;
       warningDevice = "";
       warningText = "The end time cannot be earlier than the current time";
       setState(() {});
@@ -265,10 +316,17 @@ class _TimePickerState extends State<TimePicker> {
     if (isFeatureEnabled1) data.add(15);
     if (isFeatureEnabled2) data.add(18);
 
-    data.add(timeTo.hour);
-    data.add(timeTo.minute);
-    data.add(timeFrom.hour);
-    data.add(timeFrom.minute);
+    data.add(fromDate.year % 100);
+    data.add(fromDate.month);
+    data.add(fromDate.day);
+    data.add(fromDate.hour);
+    data.add(fromDate.minute);
+
+    data.add(toDate.year % 100);
+    data.add(toDate.month);
+    data.add(toDate.day);
+    data.add(toDate.hour);
+    data.add(toDate.minute);
 
     await bleprovider.writeCharacteristic(uuidWrite, data);
 
